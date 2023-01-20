@@ -53,4 +53,13 @@ public class ItemClientController {
                 .retrieve()
                 .bodyToMono(Item.class);
     }
+
+    @PutMapping("/client/updateItem/{id}")
+    public Mono<Item> updateItem(@PathVariable String id, @RequestBody Item actualItem) {
+        return webClient.put()
+                .uri(ITEM_END_POINT_V1+"/{id}", id)
+                .body(Mono.just(actualItem), Item.class)
+                .retrieve()
+                .bodyToMono(Item.class);
+    }
 }
