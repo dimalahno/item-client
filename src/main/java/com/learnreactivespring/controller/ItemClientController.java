@@ -3,9 +3,11 @@ package com.learnreactivespring.controller;
 import com.learnreactivespring.domain.Item;
 import org.springframework.core.env.Environment;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.Objects;
 
@@ -34,5 +36,13 @@ public class ItemClientController {
                 .uri(ITEM_END_POINT_V1)
                 .exchange()
                 .flatMapMany(clientResponse -> clientResponse.bodyToFlux(Item.class));
+    }
+
+    @GetMapping("/client/retrieve/singleItem/{id}")
+    public Mono<Item> getOneItemUsingRetrieve(@PathVariable String id) {
+        return webClient.get()
+                .uri(ITEM_END_POINT_V1+"/{id}", id)
+                .retrieve()
+                .bodyToMono(Item.class);
     }
 }
