@@ -3,8 +3,10 @@ package com.learnreactivespring.controller;
 import com.learnreactivespring.domain.Item;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
@@ -17,6 +19,12 @@ import static com.learnreactivespring.constants.ItemConstants.ITEM_END_POINT_V1;
 @RestController
 @Slf4j
 public class ItemClientController {
+
+    @ExceptionHandler
+    public ResponseEntity<String> handleRuntimeException(RuntimeException exception) {
+        log.error("Exception caught in handleRuntimeException : {} ", exception.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(exception.getMessage());
+    }
 
     private final WebClient webClient;
 
@@ -61,6 +69,25 @@ public class ItemClientController {
                     });
                 })
                 .bodyToFlux(Item.class);
+    }
+
+    @GetMapping("/client/exchange/error")
+    public Flux<Item> errorExchange() {
+        return webClient.get()
+                .uri(ITEM_END_POINT_V1+"/runtimeException")
+                .exchange()
+                .flatMapMany(clientResponse -> {
+                    if (clientResponse.statusCode().is5xxServerError()) {
+                        return clientResponse.bodyToMono(String.class)
+                                .flatMap(errorMessage -> {
+                                    log.error("The error Messega is : {}", errorMessage);
+                                    return Mono.error(new RuntimeException(errorMessage));
+                                });
+
+                    } else {
+                        return clientResponse.bodyToFlux(Item.class);
+                    }
+                });
     }
 
     @PostMapping("/client/createItem")
